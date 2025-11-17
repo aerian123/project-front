@@ -1,0 +1,408 @@
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 48px 24px;
+  display: grid;
+  gap: 36px;
+}
+
+.header {
+  display: grid;
+  gap: 24px;
+}
+
+.titleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.titleGroup h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 2.6rem);
+}
+
+.titleGroup p {
+  margin: 0;
+  color: #475569;
+}
+
+.overview {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.statCard {
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 20px;
+  display: grid;
+  gap: 8px;
+}
+
+.statLabel {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.statValue {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.quickActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.primaryButton,
+.secondaryButton {
+  border-radius: 999px;
+  padding: 12px 20px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.primaryButton {
+  background: linear-gradient(135deg, #38bdf8 0%, #2563eb 100%);
+  color: #fff;
+  box-shadow: 0 16px 32px rgba(37, 99, 235, 0.25);
+}
+
+.primaryButton:hover,
+.primaryButton:focus-visible {
+  transform: translateY(-1px);
+}
+
+.secondaryButton {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.filterRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.filterButton {
+  border-radius: 999px;
+  border: 1px solid #cbd5f5;
+  padding: 8px 18px;
+  background: #fff;
+  color: #1e293b;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border 0.2s ease;
+}
+
+.filterButtonActive {
+  background: #1d4ed8;
+  color: #fff;
+  border-color: #1d4ed8;
+  box-shadow: 0 12px 24px rgba(29, 78, 216, 0.25);
+}
+
+.list {
+  display: grid;
+  gap: 20px;
+}
+
+.groupSection {
+  border-radius: 24px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.04);
+  padding: 16px 0 0;
+}
+
+.groupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px 12px;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.groupHeader h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.groupCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #0f172a;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.groupList {
+  display: grid;
+  gap: 16px;
+  padding: 20px 24px 24px;
+}
+
+.card {
+  border-radius: 18px;
+  border: 1px solid #e2e8f0;
+  padding: 16px 20px;
+  background: #ffffff;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.cardExpanded {
+  border-color: #c7d2fe;
+  box-shadow: 0 20px 36px rgba(37, 99, 235, 0.12);
+}
+
+.cardToggle {
+  border: none;
+  background: transparent;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cardToggle:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 4px;
+  border-radius: 12px;
+}
+
+.cardSummary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.toggleHint {
+  color: #2563eb;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cardBody {
+  margin-top: 16px;
+  display: grid;
+  gap: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.badge {
+  align-self: flex-start;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.badgeProcessing {
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+}
+
+.badgeCompleted {
+  background: rgba(34, 197, 94, 0.15);
+  color: #15803d;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.cardMeta {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.92rem;
+}
+
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.timelineItem {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.timelineMarker {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 6px;
+  background: #cbd5f5;
+}
+
+.timelineActive {
+  background: #2563eb;
+}
+
+.timelineContent {
+  flex: 1;
+  display: grid;
+  gap: 2px;
+}
+
+.timelineContent strong {
+  font-size: 0.95rem;
+}
+
+.timelineContent span {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.cardActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.linkButton,
+.outlineButton {
+  border-radius: 12px;
+  padding: 10px 18px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.linkButton {
+  background: #1d4ed8;
+  color: #fff;
+}
+
+.outlineButton {
+  background: #fff;
+  color: #1d4ed8;
+  border: 1px solid #1d4ed8;
+}
+
+.checklistCard {
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 20px;
+  background: #f8fafc;
+  display: grid;
+  gap: 12px;
+}
+
+.checklistList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.checklistItem {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: #fff;
+}
+
+.checklistItemDone {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.checklistLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.checklistLabel input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #1d4ed8;
+}
+
+.checklistMeta {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.checklistTextDone {
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  color: #15803d;
+}
+
+.checklistNotice {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #15803d;
+  font-weight: 600;
+}
+
+.emptyState {
+  border-radius: 16px;
+  border: 1px dashed #cbd5f5;
+  padding: 40px;
+  text-align: center;
+  color: #475569;
+  display: grid;
+  gap: 12px;
+}
+
+@media (max-width: 720px) {
+  .card {
+    padding: 20px;
+  }
+
+  .cardActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .primaryButton,
+  .secondaryButton {
+    flex: 1;
+  }
+}

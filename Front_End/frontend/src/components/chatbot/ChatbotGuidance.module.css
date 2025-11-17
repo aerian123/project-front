@@ -1,0 +1,221 @@
+.placeholder,
+.empty,
+.result {
+  background-color: #fff;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-neutral-300);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-subtle);
+}
+
+.placeholder ul {
+  margin: var(--space-md) 0 0;
+  padding-left: 1.2rem;
+  color: var(--color-neutral-500);
+}
+
+.empty h3 {
+  margin-top: 0;
+}
+
+.loading {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.helperText {
+  color: var(--color-neutral-500);
+  margin: 0;
+}
+
+.resetButton {
+  background: none;
+  border: 1px solid var(--color-primary-sky);
+  color: var(--color-primary-sky-dark);
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-default);
+}
+
+.resetButton:hover,
+.resetButton:focus-visible {
+  background-color: var(--color-primary-sky-light);
+}
+
+.result {
+  display: grid;
+  gap: var(--space-xl);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.lead {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-primary-sky-dark);
+}
+
+.summary {
+  margin: 0;
+  color: var(--color-neutral-700);
+}
+
+.cardList {
+  display: grid;
+  gap: var(--space-lg);
+}
+
+.petitionCard {
+  border-radius: var(--radius-xl);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  padding: var(--space-xl);
+  background: linear-gradient(180deg, #fafdff 0%, #f2f7ff 100%);
+  box-shadow: 0 16px 45px rgba(15, 23, 42, 0.08);
+  display: grid;
+  gap: var(--space-lg);
+}
+
+.cardHeader {
+  display: grid;
+  gap: var(--space-2xs);
+}
+
+.cardTag {
+  display: inline-flex;
+  width: 48px;
+  height: 8px;
+  border-radius: 999px;
+  background-color: var(--color-primary-sky-light, #dbeafe);
+}
+
+.cardHeader h3 {
+  margin: var(--space-sm) 0 var(--space-xs);
+  font-size: 1.4rem;
+}
+
+.cardSummary {
+  margin: var(--space-xs) 0 0;
+  color: var(--color-neutral-600);
+}
+
+.cardBody h4 {
+  margin: 0 0 var(--space-xs);
+}
+
+.cardBody {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.textBlock {
+  margin: 0;
+  color: var(--color-neutral-700);
+  white-space: pre-line;
+}
+
+.stepList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.stepListItem {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  border-radius: var(--radius-md);
+  background-color: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.stepListItem p {
+  margin: 0;
+  color: var(--color-neutral-800);
+}
+
+.stepBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  font-weight: 600;
+  background-color: var(--color-primary-sky-light, #dbeafe);
+  color: var(--color-primary-sky-dark, #0f62fe);
+}
+
+.channelGrid {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.channelGrid h4 {
+  margin: 0 0 var(--space-2xs);
+}
+
+@media (min-width: 960px) {
+  .header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .channelGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.cardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.cardMeta {
+  display: inline-flex;
+  gap: var(--space-xs);
+  font-size: var(--font-size-sm);
+  color: var(--color-neutral-600);
+  font-weight: 600;
+}
+
+.checklistButton {
+  border: none;
+  border-radius: 999px;
+  padding: 0.6rem 1.4rem;
+  background: radial-gradient(circle at top left, #5ca2ff, #3b82f6);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.35);
+  transition: transform 150ms ease, filter 150ms ease;
+}
+
+.checklistButton:hover,
+.checklistButton:focus-visible {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+.checklistButton.disabled {
+  background: #e2e8f0;
+  box-shadow: none;
+  color: #94a3b8;
+  cursor: not-allowed;
+}

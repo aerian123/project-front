@@ -1,0 +1,42 @@
+/* Horizontal options bar under header */
+.bar {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  align-items: center;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.chip {
+  -webkit-appearance: none;
+  appearance: none;
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #333;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.chip:hover,
+.chip:focus-visible {
+  background: #f3f4f6;
+  border-color: #cbd5f5;
+  color: #1f2937;
+  outline: none;
+}
+
+.chip[aria-selected="true"],
+.selected {
+  background: #111827;
+  color: #fff;
+  border-color: #111827;
+}

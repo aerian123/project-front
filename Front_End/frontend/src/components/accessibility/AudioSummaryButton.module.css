@@ -1,0 +1,14 @@
+.button {
+  border: 1px solid var(--color-primary-sky);
+  border-radius: var(--radius-md);
+  padding: var(--space-xs) var(--space-md);
+  background-color: #fff;
+  color: var(--color-primary-sky-dark);
+  font-weight: 600;
+  transition: var(--transition-default);
+}
+
+.button:hover,
+.button:focus-visible {
+  background-color: var(--color-primary-sky-light);
+}

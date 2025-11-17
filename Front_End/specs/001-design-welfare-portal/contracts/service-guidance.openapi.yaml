@@ -1,0 +1,226 @@
+openapi: 3.0.3
+info:
+  title: Public Welfare Service Guidance API
+  version: 0.1.0
+  description: >
+    Read-only endpoints powering the Public Welfare Service Assistant portal.
+    Provides service guidance, document requirements, and support channel metadata for React layouts.
+servers:
+  - url: https://api.example.gov/welfare
+    description: Production content service
+  - url: https://staging.api.example.gov/welfare
+    description: Staging content service
+paths:
+  /services:
+    get:
+      summary: List all published service guidance entries
+      tags: [ServiceGuidance]
+      parameters:
+        - in: query
+          name: categoryId
+          schema:
+            type: string
+          description: Limit results to a specific life-event category
+      responses:
+        '200':
+          description: Collection of services
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceGuidanceList'
+  /services/{serviceId}:
+    get:
+      summary: Fetch a single service guidance record
+      tags: [ServiceGuidance]
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Service guidance detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceGuidance'
+        '404':
+          description: Service not found
+  /categories:
+    get:
+      summary: Retrieve life-event categories with assigned services
+      tags: [Category]
+      responses:
+        '200':
+          description: Category listing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryList'
+components:
+  schemas:
+    ServiceGuidanceList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceGuidanceSummary'
+    ServiceGuidanceSummary:
+      type: object
+      required: [id, title, summary, categories]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryRef'
+    ServiceGuidance:
+      type: object
+      required:
+        - id
+        - title
+        - summary
+        - eligibilityHighlights
+        - onlineSteps
+        - offlineSteps
+        - documentChecklist
+        - supportChannels
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryRef'
+        eligibilityHighlights:
+          type: array
+          items:
+            type: string
+        onlineSteps:
+          type: array
+          items:
+            $ref: '#/components/schemas/StepBlock'
+        offlineSteps:
+          type: array
+          items:
+            $ref: '#/components/schemas/StepBlock'
+        documentChecklist:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentRequirement'
+        supportChannels:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupportChannel'
+        lastReviewed:
+          type: string
+          format: date
+        notes:
+          type: string
+    CategoryList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+    Category:
+      type: object
+      required: [id, title]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        icon:
+          type: string
+        primaryColor:
+          type: string
+        serviceIds:
+          type: array
+          items:
+            type: string
+    CategoryRef:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+        displayLabel:
+          type: string
+    DocumentRequirement:
+      type: object
+      required: [id, name, issuingAuthority, availableFormats]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        issuingAuthority:
+          type: string
+        purpose:
+          type: string
+        availableFormats:
+          type: array
+          items:
+            type: string
+            enum: [download, in-person, copy]
+        downloadUrl:
+          type: string
+          format: uri
+        fee:
+          type: string
+        validityPeriod:
+          type: string
+        preparationNotes:
+          type: string
+    SupportChannel:
+      type: object
+      required: [id, type, name, contact]
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [office, call-center, online-portal]
+        name:
+          type: string
+        address:
+          type: string
+        hours:
+          type: string
+        contact:
+          type: string
+        appointmentRequired:
+          type: boolean
+        notes:
+          type: string
+    StepBlock:
+      type: object
+      required: [title, description]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        requiredDocuments:
+          type: array
+          items:
+            type: string
+        estimatedTime:
+          type: string

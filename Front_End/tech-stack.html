@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>2025 Cloud Bridge Tech Stack</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --panel: #ffffff;
+      --border: #dfe3eb;
+      --accent: #4c6ef5;
+      --text: #2d3142;
+      --muted: #5b6076;
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 48px 24px 80px;
+      background: var(--bg);
+      font-family: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text);
+      line-height: 1.6;
+    }
+    h1 {
+      margin: 0 0 32px;
+      font-size: 32px;
+      font-weight: 700;
+    }
+    .grid {
+      display: grid;
+      gap: 16px;
+      max-width: 1040px;
+      margin: 0 auto;
+    }
+    .section {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 32px;
+      box-shadow: 0 12px 24px rgba(28, 43, 87, 0.12);
+    }
+    .section h2 {
+      margin: 0 0 18px;
+      font-size: 22px;
+      font-weight: 700;
+    }
+    .pill-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(76, 110, 245, 0.12);
+      color: var(--accent);
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    .table th, .table td {
+      border-bottom: 1px solid var(--border);
+      padding: 12px 0;
+      text-align: left;
+      vertical-align: top;
+      font-size: 15px;
+    }
+    .table th {
+      width: 160px;
+      color: var(--muted);
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+    .stack-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .stack-item {
+      border-left: 4px solid rgba(76, 110, 245, 0.4);
+      padding-left: 12px;
+    }
+    .stack-title {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .note {
+      margin-top: 12px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      background: rgba(76, 110, 245, 0.08);
+      color: var(--muted);
+      font-size: 14px;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    @media (max-width: 720px) {
+      body { padding: 32px 16px 64px; }
+      .section { padding: 24px; }
+      .table th { width: 120px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="grid">
+    <header>
+      <h1>2025 Cloud Bridge Frontend · Tech Stack</h1>
+      <p>React + TypeScript 기반의 공공복지 안내 챗봇 서비스. 아래 표에서 사용 중인 핵심 기술과 적용 영역을 정리했습니다.</p>
+    </header>
+    <section class="section">
+      <h2>Core Stack</h2>
+      <ul class="stack-list">
+        <li class="stack-item">
+          <div class="stack-title">언어 &amp; 런타임</div>
+          <div>TypeScript 5.x, React 18, Vite 5 (ESM 빌드)</div>
+        </li>
+        <li class="stack-item">
+          <div class="stack-title">라우팅</div>
+          <div>React Router v6 · 레이아웃 기반 네비게이션 (`AppLayout`, `Outlet`)</div>
+        </li>
+        <li class="stack-item">
+          <div class="stack-title">스타일</div>
+          <div>CSS Modules + 디자인 토큰(`styles/tokens.ts`, `index.css`)</div>
+        </li>
+        <li class="stack-item">
+          <div class="stack-title">테스트</div>
+          <div>Vitest + Testing Library + jest-axe (접근성 회귀 테스트)</div>
+        </li>
+        <li class="stack-item">
+          <div class="stack-title">품질 도구</div>
+          <div>ESLint (jsx-a11y, react-hooks), TypeScript strict 설정</div>
+        </li>
+      </ul>
+      <div class="note">`npm run build` → `tsc -b && vite build` 순서로 타입 검사 후 번들링합니다.</div>
+    </section>
+    <section class="section">
+      <h2>Directory Overview</h2>
+      <table class="table">
+        <tbody>
+          <tr>
+            <th>src/components</th>
+            <td>챗봇, 카테고리, 접근성 컨트롤, 서비스 카드 등 UI 컴포넌트</td>
+          </tr>
+          <tr>
+            <th>src/layout</th>
+            <td>AppLayout, Header, Footer, AccessibilityContext – 전역 UI와 상태 제공</td>
+          </tr>
+          <tr>
+            <th>src/pages</th>
+            <td>HomePage(챗봇/카테고리), ServiceDetailPage(민원 상세) 등 라우트 컴포넌트</td>
+          </tr>
+          <tr>
+            <th>src/data</th>
+            <td>프로토타입용 정적 데이터 (`serviceGuidance.ts`)</td>
+          </tr>
+          <tr>
+            <th>src/types</th>
+            <td>ServiceGuidance, DocumentRequirement 등 도메인 타입 정의</td>
+          </tr>
+          <tr>
+            <th>src/utils</th>
+            <td>검색/정렬 헬퍼 (`guidanceSearch.ts`) – 타입 가드를 통해 안전하게 필터링</td>
+          </tr>
+          <tr>
+            <th>tests</th>
+            <td>Vitest + Testing Library 스펙. 챗봇 흐름, 내비게이션, 접근성 검증</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+    <section class="section">
+      <h2>Why TypeScript</h2>
+      <p>프로젝트 전반이 TypeScript를 전제로 구성되어 있습니다.</p>
+      <ul class="stack-list">
+        <li class="stack-item">`tsconfig.json`, `tsconfig.app.json`, `tsconfig.node.json`으로 브라우저/서버 빌드를 분리 관리합니다.</li>
+        <li class="stack-item">도메인 모델(`types/guidance.ts`)을 통해 컴포넌트와 유틸이 동일한 타입을 공유합니다.</li>
+        <li class="stack-item">`guidanceSearch.ts` 등에서 타입 가드(`doc is Exclude&lt;...&gt;`)로 런타임 오류를 예방합니다.</li>
+        <li class="stack-item">엔트리 파일(`main.tsx`, `App.tsx`)과 테스트(`*.test.tsx`)까지 TSX 기반이라 JSX로 전환 시 대규모 수정이 필요합니다.</li>
+      </ul>
+      <div class="note">JSX로 바꾸려면 타입 선언 제거, 빌드 스크립트 수정, 의존성 정리 등 전체 구조 재작업이 필요합니다.</div>
+    </section>
+    <section class="section">
+      <h2>Build &amp; Tooling</h2>
+      <table class="table">
+        <tbody>
+          <tr>
+            <th>npm run dev</th>
+            <td>Vite 개발 서버 (HMR). 타입 체크는 Babel 대신 TS 컴파일러가 담당.</td>
+          </tr>
+          <tr>
+            <th>npm run build</th>
+            <td>TypeScript 프로젝트 빌드(`tsc -b`) 후 Vite 번들링.</td>
+          </tr>
+          <tr>
+            <th>npm run test</th>
+            <td>Vitest + Testing Library + jest-axe. a11y 회귀 테스트 포함.</td>
+          </tr>
+          <tr>
+            <th>npm run lint</th>
+            <td>ESLint + jsx-a11y + react-hooks 규칙으로 접근성 및 훅 사용 검사.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+    <section class="section">
+      <h2>주요 라이브러리 버전</h2>
+      <div class="pill-list">
+        <span class="pill">React 18.3.1</span>
+        <span class="pill">TypeScript 5.5.x</span>
+        <span class="pill">Vite 5.4.x</span>
+        <span class="pill">Vitest 2.x</span>
+        <span class="pill">React Router 6.28</span>
+        <span class="pill">Testing Library 16.x</span>
+        <span class="pill">ESLint 9.x</span>
+      </div>
+    </section>
+    <section class="section">
+      <h2>다음 단계 아이디어</h2>
+      <ul class="stack-list">
+        <li class="stack-item">실제 API 연동 시 `types/`와 `data/` 구조를 그대로 활용해 DTO ↔ UI 모델 매핑.</li>
+        <li class="stack-item">전역 상태가 늘어나면 React Query 또는 Zustand 도입을 검토.</li>
+        <li class="stack-item">접근성 확대를 위해 Speech Synthesis fallback, 키보드 트랩 등 테스트 케이스 추가.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

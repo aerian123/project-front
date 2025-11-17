@@ -1,0 +1,273 @@
+/* 카카오톡 형태의 말풍선 레이아웃을 담당하는 스타일 모음 */
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  flex: 1;
+  min-height: 0;
+  font-size: 0.95rem;
+}
+
+.messages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.message {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-sm);
+}
+
+.assistant {
+  justify-content: flex-start;
+}
+
+.user {
+  justify-content: flex-end;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 14px;
+  background: var(--color-primary-sky-dark, #1d7ccd);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 6px 12px rgba(29, 124, 205, 0.28);
+  overflow: hidden;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bubble {
+  max-width: min(85%, 360px);
+  padding: 12px 16px;
+  border-radius: 18px;
+  background: #f3f5fb;
+  border: 1px solid rgba(19, 41, 75, 0.12);
+  display: grid;
+  gap: 6px;
+  line-height: 1.52;
+  box-shadow: none;
+  font-size: 0.94em;
+}
+
+.assistantBubble {
+  background: #f3f5fb;
+}
+
+.highlight {
+  background: #e7efff;
+  border-color: rgba(29, 124, 205, 0.3);
+}
+
+.userBubble {
+  background: var(--color-primary-sky, #74bff3);
+  border-color: transparent;
+  color: #fff;
+  border-radius: 18px;
+  box-shadow: none;
+}
+
+.label {
+  margin: 0;
+  font-size: calc(var(--font-size-xs, 0.75rem) - 0.04rem);
+  font-weight: 600;
+  color: var(--color-neutral-500);
+}
+
+.title {
+  margin: 0;
+  font-size: calc(var(--font-size-lg, 1.125rem) - 0.1rem);
+  font-weight: 700;
+  color: var(--color-neutral-800);
+}
+
+.body {
+  margin: 0;
+  color: var(--color-neutral-700);
+  font-size: 0.96em;
+}
+
+.sectionTitle {
+  margin: 0 0 var(--space-xs);
+  font-weight: 700;
+  color: var(--color-neutral-800);
+}
+
+.list {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.3rem;
+  color: var(--color-neutral-700);
+}
+
+.stepList {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.stepList strong {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.stepList p {
+  margin: 0;
+}
+
+.stepMeta {
+  display: block;
+  margin-top: 4px;
+  font-size: calc(var(--font-size-sm, 0.875rem) - 0.05rem);
+  color: var(--color-neutral-500);
+}
+
+.documentStack,
+.channelStack {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.documentCard,
+.channelCard {
+  border-radius: 12px;
+  border: 1px solid rgba(19, 41, 75, 0.12);
+  padding: var(--space-sm) var(--space-md);
+  background: rgba(255, 255, 255, 0.92);
+  display: grid;
+  gap: 4px;
+}
+
+.documentCard h5,
+.channelCard h5 {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-weight: 700;
+}
+
+.meta {
+  margin: 0;
+  font-size: calc(var(--font-size-sm, 0.875rem) - 0.05rem);
+  color: var(--color-neutral-500);
+}
+
+.documentCard a {
+  color: var(--color-primary-sky-dark, #1d7ccd);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.typing {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: calc(var(--font-size-sm, 0.875rem) - 0.1rem);
+  color: var(--color-neutral-500);
+}
+
+.quickButton,
+.secondaryButton,
+/* 메인 CTA 버튼 (체크리스트 이동) */
+.primaryButton {
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: var(--transition-default);
+  font-size: var(--font-size-sm);
+}
+
+/* 대화 아래 버튼 영역 */
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-top: auto;
+  padding-top: var(--space-sm);
+}
+
+/* 보조 선택지(빠른 응답) 컨테이너 */
+.quickRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  justify-content: center;
+}
+
+.quickButton {
+  background: #ffffff;
+  border-color: rgba(29, 124, 205, 0.28);
+  color: var(--color-primary-sky-dark, #1d7ccd);
+}
+
+.quickButton:hover,
+.quickButton:focus-visible {
+  background: rgba(116, 191, 243, 0.16);
+  outline: none;
+}
+
+.secondaryButton {
+  background: rgba(116, 191, 243, 0.16);
+  color: var(--color-primary-sky-dark, #1d7ccd);
+  border-color: rgba(29, 124, 205, 0.25);
+}
+
+.secondaryButton:hover,
+.secondaryButton:focus-visible {
+  background: rgba(116, 191, 243, 0.26);
+  outline: none;
+}
+
+.primaryButton {
+  margin-top: var(--space-sm);
+  background: linear-gradient(135deg, #6ab7ff 0%, #1d7ccd 100%);
+  color: #fff;
+  border: none;
+  box-shadow: 0 22px 42px rgba(24, 97, 176, 0.35);
+  min-width: min(360px, 100%);
+  text-align: center;
+  padding: 14px 36px;
+  align-self: center;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.015em;
+  border-radius: 18px;
+}
+
+.primaryButton:hover,
+.primaryButton:focus-visible {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+  outline: none;
+}
+
+.chat button {
+  font-family: inherit;
+}
+
+@media (max-width: 480px) {
+  .bubble {
+    max-width: 100%;
+  }
+
+  .quickRow {
+    gap: var(--space-xs);
+  }
+
+  .quickButton,
+  .secondaryButton,
+  .primaryButton {
+    padding: 6px 12px;
+    min-width: 100%;
+  }
+}

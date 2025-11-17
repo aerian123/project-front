@@ -1,0 +1,208 @@
+/* 챗봇 트리거 버튼 스타일. 위치나 그림자 값을 바꾸고 싶으면 이 블록을 수정하세요. */
+.trigger {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 80px;
+  height: 80px;
+  border: none;
+  border-radius: 50%;
+  padding: 12px;
+  background: #ffffff;
+  box-shadow: 0 12px 32px rgba(38, 60, 90, 0.18);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  z-index: 1400;
+  overflow: visible;
+}
+
+.triggerContent {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.speechBubble {
+  position: absolute;
+  top: -150px;
+  right: -28px;
+  width: 190px;
+  pointer-events: none;
+  animation: speechPulse 2.6s ease-in-out infinite;
+}
+
+.speechBubble img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.speechText {
+  position: absolute;
+  top: 50%;
+  left: 40px;
+  right: 40px;
+  transform: translateY(-50%);
+  font-size: 14px;
+  font-family: 'Fredoka', 'Jua', 'Pretendard', sans-serif;
+  font-weight: 800;
+  text-align: center;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 6px rgba(15, 23, 42, 0.35);
+}
+
+.mascot {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.trigger:hover,
+.trigger:focus-visible {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 16px 36px rgba(38, 60, 90, 0.22);
+  outline: none;
+}
+
+/* 챗봇이 열렸을 때 트리거가 사라지는 애니메이션을 담당합니다. */
+.triggerHidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.92);
+}
+
+/* 챗봇 대화창 컨테이너. 크기나 위치를 조절하려면 bottom/right 값을 바꾸세요. */
+.window {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: min(480px, calc(100vw - 48px));
+  max-height: min(720px, calc(100vh - 80px));
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 18px 42px rgba(25, 36, 54, 0.22);
+  border: 1px solid rgba(19, 41, 75, 0.12);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 1500;
+}
+
+@keyframes speechPulse {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-4px) scale(1.03);
+    opacity: 0.95;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* 상단 헤더 영역. 배경 그라데이션이나 정렬을 변경할 때 참고하세요. */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #e5f4ff 0%, #ffffff 100%);
+  border-bottom: 1px solid rgba(19, 41, 75, 0.08);
+}
+
+.lead {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary-sky-dark, #1d7ccd);
+  letter-spacing: 0.01em;
+}
+
+.title {
+  margin: 4px 0 0;
+  font-size: 18px;
+}
+
+.closeButton {
+  background: none;
+  border: 1px solid rgba(19, 41, 75, 0.2);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #2f3f57;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.closeButton:hover,
+.closeButton:focus-visible {
+  background-color: rgba(29, 124, 205, 0.12);
+  border-color: rgba(29, 124, 205, 0.3);
+  outline: none;
+}
+
+/* 입력 영역과 결과 영역을 수직으로 쌓는 컨테이너입니다. */
+.content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  background: #f7fafe;
+}
+
+/* 입력 폼이 들어가는 영역. 내부 패딩이나 높이를 조정할 수 있습니다. */
+.responseArea {
+  flex: 1;
+  padding: 16px 20px;
+  overflow-y: auto;
+  background: linear-gradient(180deg, #edf6ff 0%, #f8fbff 50%, rgba(248, 251, 255, 0.92) 100%);
+  display: flex;
+  flex-direction: column;
+}
+
+.inputArea {
+  padding: 14px 20px;
+  background: rgba(255, 255, 255, 0.97);
+  border-top: 1px solid rgba(19, 41, 75, 0.08);
+}
+
+/* 720px 이하에서는 버튼/창 크기를 줄여 모바일에서 잘 보이도록 합니다. */
+@media (max-width: 720px) {
+  .trigger {
+    bottom: 16px;
+    right: 16px;
+    width: 60px;
+    height: 60px;
+    padding: 10px;
+  }
+
+  .window {
+    right: 16px;
+    left: 16px;
+    width: auto;
+    bottom: 16px;
+    max-height: calc(100vh - 32px);
+  }
+}
+
+/* 더 작은 화면에서 패딩을 최소화합니다. */
+@media (max-width: 480px) {
+  .inputArea {
+    padding: 10px 16px;
+  }
+
+  .responseArea {
+    padding: 12px 16px;
+  }
+}

@@ -1,0 +1,116 @@
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px;
+  width: 100%;
+  position: static;
+  background: #ffffff;
+  border: 1px solid #dbeafe;
+  border-radius: 18px;
+  box-shadow: 0 24px 48px rgba(37, 99, 235, 0.08);
+}
+
+@media (max-width: 960px) {
+  .sidebar {
+    display: none;
+  }
+}
+
+.title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.groupLabel {
+  margin: 4px 0 -4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.divider {
+  height: 1px;
+  background: #e2e8f0;
+}
+
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #1e293b;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.item:hover,
+.item:focus-visible {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  outline: none;
+}
+
+.item[aria-selected='true'] {
+  background: #1d4ed8;
+  color: #ffffff;
+  border-color: #1d4ed8;
+  box-shadow: 0 10px 24px rgba(29, 78, 216, 0.25);
+}
+
+.indicator {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  text-decoration: none;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #1d4ed8;
+  background: rgba(191, 219, 254, 0.35);
+  transition: all 0.2s ease;
+}
+
+.link:hover,
+.link:focus-visible {
+  background: #3b82f6;
+  color: #ffffff;
+  border-color: #3b82f6;
+  outline: none;
+}
+
+.linkActive {
+  background: #1d4ed8;
+  color: #ffffff;
+  border-color: #1d4ed8;
+  box-shadow: 0 10px 24px rgba(29, 78, 216, 0.25);
+}
