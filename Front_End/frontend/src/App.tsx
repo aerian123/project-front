@@ -7,6 +7,7 @@ import { SignupPage } from './pages/Auth/SignupPage'
 import { LoginPage } from './pages/Auth/LoginPage'
 import MyComplaintsPage from './pages/MyComplaints/MyComplaintsPage'
 import NearbyOfficesPage from './pages/NearbyOffices/NearbyOfficesPage'
+import MembersPage from './pages/Admin/MembersPage'
 
 const router = createBrowserRouter([
   {
@@ -17,6 +18,7 @@ const router = createBrowserRouter([
       { path: '/login', element: <LoginPage /> },
       { path: '/my-complaints', element: <MyComplaintsPage /> },
       { path: '/nearby-offices', element: <NearbyOfficesPage /> },
+      { path: '/admin/members', element: <MembersPage /> },
       { path: '/services/:serviceId', element: <ServiceDetailPage /> },
       { path: '*', element: <HomePage /> },
       { path: '/services/:serviceId/checklist', element: <DocumentChecklistPage /> },

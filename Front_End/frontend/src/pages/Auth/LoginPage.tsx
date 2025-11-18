@@ -115,11 +115,12 @@ export const LoginPage = () => {
 
     setSubmitting(true)
     try {
-      const response = await postJson<{ memberId: string; name: string; phone: string }>(
+      const response = await postJson<{ memberId: string; name: string; phone: string; role?: 'master' | 'member' }>(
         '/api/auth/login',
         { name: trimmedName, phone: normalizedPhone },
       )
-      login({ name: response.name, phone: response.phone })
+      const role = response.role ?? (response.name === 'master' ? 'master' : 'member')
+      login({ memberId: response.memberId, name: response.name, phone: response.phone, role })
       setAlert({ type: 'success', text: `${response.name}님 환영합니다. 홈으로 이동합니다.` })
       setTimeout(() => {
         navigate('/')

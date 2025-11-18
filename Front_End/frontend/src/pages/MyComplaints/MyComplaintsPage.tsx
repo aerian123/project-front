@@ -1,57 +1,38 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  CASES_STORAGE_KEY,
   CASES_UPDATED_EVENT,
   loadCases,
   type MyCaseEntry,
-  completeCase as completeCaseEntry,
+  refreshCases,
+  resetCaseStore,
+  updateCaseProgress,
 } from '../../utils/caseTracker'
-import {
-  CHECKLIST_STORAGE_PREFIX,
-  DOCUMENT_CHECKLIST_EVENT,
-  readChecklist,
-  toggleChecklistEntry,
-} from '../../utils/documentChecklist'
 import { guidanceContent } from '../../data/serviceGuidance'
 import { getServiceDetail } from '../../utils/guidanceSearch'
+import { getSequenceRows } from '../../data/serviceSequences'
+import type { DocumentRequirement } from '../../types/guidance'
 import styles from './MyComplaintsPage.module.css'
-
-const filters = [
-  { id: 'all', label: '전체' },
-  { id: 'processing', label: '진행 중' },
-  { id: 'completed', label: '완료' },
-]
+import { useAuth } from '../../context/useAuth'
 
 const MyComplaintsPage = () => {
-  const [activeFilter, setActiveFilter] = useState(filters[0].id)
+  const { user } = useAuth()
   const [cases, setCases] = useState<MyCaseEntry[]>(() => loadCases())
-  const [, setChecklistVersion] = useState(0)
   const [expandedCards, setExpandedCards] = useState<Set<string>>(() => new Set())
+  const [showArchive, setShowArchive] = useState(false)
+  const [isLoadingCases, setIsLoadingCases] = useState(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
     const syncCases = () => setCases(loadCases())
-    const handleCaseStorage = (event: StorageEvent) => {
-      if (event.key === CASES_STORAGE_KEY) syncCases()
-      if (event.key?.startsWith(CHECKLIST_STORAGE_PREFIX)) {
-        setChecklistVersion((prev) => prev + 1)
-      }
-    }
-
-    const handleChecklistEvent = () => setChecklistVersion((prev) => prev + 1)
 
     window.addEventListener(CASES_UPDATED_EVENT, syncCases as EventListener)
-    window.addEventListener('storage', handleCaseStorage)
-    window.addEventListener(DOCUMENT_CHECKLIST_EVENT, handleChecklistEvent)
+    syncCases()
 
     return () => {
       window.removeEventListener(CASES_UPDATED_EVENT, syncCases as EventListener)
-      window.removeEventListener('storage', handleCaseStorage)
-      window.removeEventListener(DOCUMENT_CHECKLIST_EVENT, handleChecklistEvent)
     }
   }, [])
-
   const stats = useMemo(
     () => ({
       total: cases.length,
@@ -61,39 +42,57 @@ const MyComplaintsPage = () => {
     [cases],
   )
 
-  const handleFilterChange = (filterId: string) => setActiveFilter(filterId)
-
   const navigate = useNavigate()
 
-  const filteredCases = useMemo(() => {
-    if (activeFilter === 'processing') {
-      return cases.filter((entry) => entry.status === 'in-progress')
-    }
-    if (activeFilter === 'completed') {
-      return cases.filter((entry) => entry.status === 'completed')
-    }
-    return cases
-  }, [activeFilter, cases])
-
-  const groupedCases = useMemo(() => {
-    return filteredCases.reduce<Record<'in-progress' | 'completed', MyCaseEntry[]>>(
-      (acc, entry) => {
-        acc[entry.status]?.push(entry)
-        return acc
-      },
-      { 'in-progress': [], completed: [] },
-    )
-  }, [filteredCases])
+  const activeCases = useMemo(
+    () => cases.filter((entry) => entry.status === 'in-progress'),
+    [cases],
+  )
+  const archivedCases = useMemo(
+    () => cases.filter((entry) => entry.status === 'completed'),
+    [cases],
+  )
 
   useEffect(() => {
-    const validIds = new Set(filteredCases.map((entry) => entry.serviceId))
+    const validIds = new Set(cases.map((entry) => entry.serviceId))
     setExpandedCards((prev) => {
       const next = new Set(
         Array.from(prev).filter((serviceId) => validIds.has(serviceId)),
       )
       return next
     })
-  }, [filteredCases])
+  }, [cases])
+
+  useEffect(() => {
+    if (archivedCases.length === 0) {
+      setShowArchive(false)
+    }
+  }, [archivedCases.length])
+
+  useEffect(() => {
+    if (!user?.memberId) {
+      resetCaseStore()
+      setCases([])
+      setExpandedCards(new Set())
+      setShowArchive(false)
+      setIsLoadingCases(false)
+      return
+    }
+
+    let canceled = false
+    setIsLoadingCases(true)
+    refreshCases(user.memberId)
+      .catch((error) => {
+        console.error('나의 민원 불러오기 실패', error)
+      })
+      .finally(() => {
+        if (!canceled) setIsLoadingCases(false)
+      })
+
+    return () => {
+      canceled = true
+    }
+  }, [user])
 
   const formatDate = (iso?: string) => {
     if (!iso) return '기록 없음'
@@ -107,26 +106,71 @@ const MyComplaintsPage = () => {
     }
   }
 
-  const emptyMessage =
-    activeFilter === 'completed'
-      ? '완료된 민원이 아직 없습니다.'
-      : activeFilter === 'processing'
-        ? '진행 중인 민원이 없습니다. 진행하기 버튼을 눌러 민원을 추가해 보세요.'
-        : '등록된 민원이 아직 없습니다.'
+  const emptyMessage = '진행 중인 민원이 없습니다. 진행하기 버튼을 눌러 민원을 추가해 보세요.'
+  const archiveEmptyMessage = '완료된 민원이 아직 없습니다.'
 
-  const getChecklistForService = (serviceId: string) =>
-    readChecklist(serviceId)
+  const buildSequenceChecklist = (serviceId: string): DocumentRequirement[] => {
+    const rows = getSequenceRows(serviceId)
+    if (rows.length === 0) return []
+    return rows.flatMap((row) => {
+      if (!row.checklist || row.checklist.length === 0) {
+        return [
+          {
+            id: row.id,
+            name: row.title ?? row.content,
+            issuingAuthority: row.title ?? row.type,
+            availableFormats: [],
+            preparationNotes: row.content,
+            purpose: row.type,
+          },
+        ]
+      }
+      return row.checklist.map((item, index) => ({
+        id: `${row.id}-${index}`,
+        name: item,
+        issuingAuthority: row.title ?? row.type,
+        availableFormats: [],
+        preparationNotes: row.content,
+        purpose: row.type,
+      }))
+    })
+  }
 
-  const handleToggleDocument = (
+  const getChecklistSet = (entry: MyCaseEntry) => new Set(entry.checklist ?? [])
+
+  const handleToggleDocument = async (
     entry: MyCaseEntry,
     documentId: string,
     requiredDocs: string[],
   ) => {
-    const next = toggleChecklistEntry(entry.serviceId, documentId)
-    if (entry.status === 'in-progress' && requiredDocs.every((docId) => next.has(docId))) {
-      completeCaseEntry(entry.serviceId)
+    if (!user?.memberId) {
+      navigate('/login')
+      return
     }
-    setChecklistVersion((prev) => prev + 1)
+
+    const nextChecklist = getChecklistSet(entry)
+    if (nextChecklist.has(documentId)) {
+      nextChecklist.delete(documentId)
+    } else {
+      nextChecklist.add(documentId)
+    }
+
+    const shouldComplete =
+      entry.status === 'in-progress' && requiredDocs.every((docId) => nextChecklist.has(docId))
+
+    try {
+      const updated = await updateCaseProgress({
+        memberId: user.memberId,
+        serviceId: entry.serviceId,
+        checklist: Array.from(nextChecklist),
+        status: shouldComplete ? 'completed' : entry.status,
+      })
+      setCases((prev) =>
+        prev.map((item) => (item.serviceId === updated.serviceId ? updated : item)),
+      )
+    } catch (error) {
+      console.error('체크리스트 저장에 실패했습니다.', error)
+    }
   }
 
   const toggleCard = (serviceId: string) => {
@@ -141,12 +185,159 @@ const MyComplaintsPage = () => {
     })
   }
 
-  const groupOrder: Array<'in-progress' | 'completed'> = ['in-progress', 'completed']
-  const groupLabels: Record<'in-progress' | 'completed', string> = {
-    'in-progress': '진행 중',
-    completed: '완료',
+  const renderCaseCard = (entry: MyCaseEntry) => {
+    const detail = getServiceDetail(entry.serviceId, guidanceContent)
+    const checklist = getChecklistSet(entry)
+    const fallbackChecklistDetails =
+      detail?.documentChecklistDetails?.length
+        ? []
+        : buildSequenceChecklist(entry.serviceId)
+    const checklistDetails =
+      detail?.documentChecklistDetails?.length && detail.documentChecklistDetails.length > 0
+        ? detail.documentChecklistDetails
+        : fallbackChecklistDetails
+    const requiredDocs =
+      detail?.documentChecklist && detail.documentChecklist.length > 0
+        ? detail.documentChecklist
+        : fallbackChecklistDetails.map((doc) => doc.id)
+    const allDocsComplete =
+      requiredDocs.length > 0 &&
+      requiredDocs.every((docId) => checklist.has(docId))
+    const expanded = expandedCards.has(entry.serviceId)
+    const panelId = `case-panel-${entry.serviceId}`
+
+    return (
+      <article
+        key={entry.serviceId}
+        className={`${styles.card} ${expanded ? styles.cardExpanded : ''}`}
+      >
+        <button
+          type="button"
+          className={styles.cardToggle}
+          onClick={() => toggleCard(entry.serviceId)}
+          aria-expanded={expanded}
+          aria-controls={panelId}
+        >
+          <div className={styles.cardSummary}>
+            <span
+              className={`${styles.badge} ${
+                entry.status === 'in-progress' ? styles.badgeProcessing : styles.badgeCompleted
+              }`}
+            >
+              {entry.status === 'in-progress' ? '진행 중' : '완료'}
+            </span>
+            <div>
+              <p className={styles.cardTitle}>{entry.title}</p>
+              {entry.summary && <p className={styles.cardMeta}>{entry.summary}</p>}
+            </div>
+          </div>
+          <span className={styles.toggleHint}>{expanded ? '접기' : '자세히'}</span>
+        </button>
+        {expanded && (
+          <div className={styles.cardBody} id={panelId}>
+            <ul className={styles.timeline}>
+              <li className={styles.timelineItem}>
+                <span className={`${styles.timelineMarker} ${styles.timelineActive}`} />
+                <div className={styles.timelineContent}>
+                  <strong>진행 시작</strong>
+                  <span>{formatDate(entry.startedAt)}</span>
+                </div>
+              </li>
+              <li className={styles.timelineItem}>
+                <span
+                  className={`${styles.timelineMarker} ${
+                    entry.status === 'completed' ? styles.timelineActive : ''
+                  }`}
+                />
+                <div className={styles.timelineContent}>
+                  <strong>완료</strong>
+                  <span>
+                    {entry.status === 'completed'
+                      ? formatDate(entry.completedAt)
+                      : '아직 완료되지 않았습니다.'}
+                  </span>
+                </div>
+              </li>
+            </ul>
+
+            {checklistDetails.length > 0 && (
+              <div className={styles.checklistCard}>
+                <h3>서류 체크리스트</h3>
+                <ul className={styles.checklistList}>
+                  {checklistDetails.map((doc) => {
+                    const completed = checklist.has(doc.id)
+                    const labelClass = completed
+                      ? `${styles.checklistLabel} ${styles.checklistTextDone}`
+                      : styles.checklistLabel
+                    const metaClass = completed
+                      ? `${styles.checklistMeta} ${styles.checklistTextDone}`
+                      : styles.checklistMeta
+                    const checkboxId = `${entry.serviceId}-${doc.id}`
+                    const typeTag = doc.purpose
+                    const themeClass = typeTag ? getChecklistTheme(typeTag) : ''
+
+                    return (
+                      <li
+                        key={doc.id}
+                        className={`${styles.checklistItem} ${
+                          completed ? styles.checklistItemDone : ''
+                        }`}
+                      >
+                        {typeTag && (
+                          <span className={`${styles.checklistTypeTag} ${themeClass}`}>
+                            {typeTag}
+                          </span>
+                        )}
+                        <label className={labelClass} htmlFor={checkboxId}>
+                          <input
+                            id={checkboxId}
+                            type="checkbox"
+                            checked={completed}
+                            disabled={entry.status === 'completed'}
+                            onChange={() => handleToggleDocument(entry, doc.id, requiredDocs)}
+                          />
+                          <span>{doc.name}</span>
+                        </label>
+                        <p className={metaClass}>{doc.issuingAuthority}</p>
+                      </li>
+                    )
+                  })}
+                </ul>
+                {entry.status === 'in-progress' && allDocsComplete && (
+                  <p className={styles.checklistNotice}>
+                    필수 서류를 모두 체크했습니다. 자동으로 완료 탭으로 이동했습니다.
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className={styles.cardActions}>
+              <Link to={`/services/${entry.serviceId}`} className={styles.linkButton}>
+                {entry.status === 'completed' ? '상세 내역 보기' : '계속 진행하기'}
+              </Link>
+              <button
+                type="button"
+                className={styles.outlineButton}
+                onClick={() => navigate(`/services/${entry.serviceId}/checklist`)}
+              >
+                {entry.status === 'completed' ? '서류 다시 확인' : '서류 체크리스트 열기'}
+              </button>
+            </div>
+          </div>
+        )}
+      </article>
+    )
   }
 
+  const getChecklistTheme = (type: string) => {
+    if (type.includes('사전') || type.includes('준비')) return styles.typePrep
+    if (type.includes('온라인')) return styles.typeOnline
+    if (type.includes('심사') || type.includes('조사')) return styles.typeReview
+    if (type.includes('접수') || type.includes('방문')) return styles.typeOffline
+    if (type.includes('지급') || type.includes('대출')) return styles.typeExecute
+    if (type.includes('사후')) return styles.typeFollow
+    return ''
+  }
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -171,191 +362,78 @@ const MyComplaintsPage = () => {
 
         
         <div className={styles.quickActions}>
-          <button type="button" className={styles.primaryButton} onClick={()=>navigate('/')}>
+          <button type="button" className={styles.primaryButton} onClick={() => navigate('/')}>
             새 민원 접수 시작하기
+          </button>
+          <button
+            type="button"
+            className={styles.secondaryButton}
+            disabled={archivedCases.length === 0 && !showArchive}
+            onClick={() => setShowArchive((prev) => !prev)}
+          >
+            {showArchive ? '이전 민원 보관함 닫기' : `이전 민원 보관함 (${archivedCases.length})`}
           </button>
         </div>
       </header>
 
-      <div className={styles.filterRow}>
-        {filters.map((filter) => (
-          <button
-            key={filter.id}
-            type="button"
-            className={`${styles.filterButton} ${
-              activeFilter === filter.id ? styles.filterButtonActive : ''
-            }`}
-            onClick={() => handleFilterChange(filter.id)}
-          >
-            {filter.label}
-            <span>
-              {filter.id === 'all'
-                ? ` (${stats.total})`
-                : filter.id === 'processing'
-                  ? ` (${stats.processing})`
-                  : ` (${stats.completed})`}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      <section className={styles.list}>
-        {filteredCases.length === 0 ? (
-          <div className={styles.emptyState}>
-            <strong>{emptyMessage}</strong>
-            <span>필요한 서류 안내에서 진행하기를 눌러 민원을 추가할 수 있습니다.</span>
-          </div>
-        ) : (
-          groupOrder.map((status) => {
-            const entries = groupedCases[status]
-            if (entries.length === 0) return null
-            return (
-              <div key={status} className={styles.groupSection}>
-                <div className={styles.groupHeader}>
-                  <h2>
-                    {groupLabels[status]}
-                    <span className={styles.groupCount}>{entries.length}</span>
-                  </h2>
-                </div>
-                <div className={styles.groupList}>
-                  {entries.map((entry) => {
-                    const detail = getServiceDetail(entry.serviceId, guidanceContent)
-                    const checklist = getChecklistForService(entry.serviceId)
-                    const requiredDocs = detail?.documentChecklist ?? []
-                    const checklistDetails = detail?.documentChecklistDetails ?? []
-                    const allDocsComplete =
-                      requiredDocs.length > 0 &&
-                      requiredDocs.every((docId) => checklist.has(docId))
-                    const expanded = expandedCards.has(entry.serviceId)
-                    const panelId = `case-panel-${entry.serviceId}`
-
-                    return (
-                      <article
-                        key={entry.serviceId}
-                        className={`${styles.card} ${expanded ? styles.cardExpanded : ''}`}
-                      >
-                        <button
-                          type="button"
-                          className={styles.cardToggle}
-                          onClick={() => toggleCard(entry.serviceId)}
-                          aria-expanded={expanded}
-                          aria-controls={panelId}
-                        >
-                          <div className={styles.cardSummary}>
-                            <span
-                              className={`${styles.badge} ${
-                                entry.status === 'in-progress'
-                                  ? styles.badgeProcessing
-                                  : styles.badgeCompleted
-                              }`}
-                            >
-                              {entry.status === 'in-progress' ? '진행 중' : '완료'}
-                            </span>
-                            <div>
-                              <p className={styles.cardTitle}>{entry.title}</p>
-                              {entry.summary && <p className={styles.cardMeta}>{entry.summary}</p>}
-                            </div>
-                          </div>
-                          <span className={styles.toggleHint}>{expanded ? '접기' : '자세히'}</span>
-                        </button>
-                        {expanded && (
-                          <div className={styles.cardBody} id={panelId}>
-                            <ul className={styles.timeline}>
-                              <li className={styles.timelineItem}>
-                                <span
-                                  className={`${styles.timelineMarker} ${styles.timelineActive}`}
-                                />
-                                <div className={styles.timelineContent}>
-                                  <strong>진행 시작</strong>
-                                  <span>{formatDate(entry.startedAt)}</span>
-                                </div>
-                              </li>
-                              <li className={styles.timelineItem}>
-                                <span
-                                  className={`${styles.timelineMarker} ${
-                                    entry.status === 'completed' ? styles.timelineActive : ''
-                                  }`}
-                                />
-                                <div className={styles.timelineContent}>
-                                  <strong>완료</strong>
-                                  <span>
-                                    {entry.status === 'completed'
-                                      ? formatDate(entry.completedAt)
-                                      : '아직 완료되지 않았습니다.'}
-                                  </span>
-                                </div>
-                              </li>
-                            </ul>
-
-                            {checklistDetails.length > 0 && (
-                              <div className={styles.checklistCard}>
-                                <h3>서류 체크리스트</h3>
-                                <ul className={styles.checklistList}>
-                                  {checklistDetails.map((doc) => {
-                                    const completed = checklist.has(doc.id)
-                                    const labelClass = completed
-                                      ? `${styles.checklistLabel} ${styles.checklistTextDone}`
-                                      : styles.checklistLabel
-                                    const metaClass = completed
-                                      ? `${styles.checklistMeta} ${styles.checklistTextDone}`
-                                      : styles.checklistMeta
-                                    const checkboxId = `${entry.serviceId}-${doc.id}`
-
-                                    return (
-                                      <li
-                                        key={doc.id}
-                                        className={`${styles.checklistItem} ${
-                                          completed ? styles.checklistItemDone : ''
-                                        }`}
-                                      >
-                                        <label className={labelClass} htmlFor={checkboxId}>
-                                          <input
-                                            id={checkboxId}
-                                            type="checkbox"
-                                            checked={completed}
-                                            disabled={entry.status === 'completed'}
-                                            onChange={() =>
-                                              handleToggleDocument(entry, doc.id, requiredDocs)
-                                            }
-                                          />
-                                          <span>{doc.name}</span>
-                                        </label>
-                                        <p className={metaClass}>{doc.issuingAuthority}</p>
-                                      </li>
-                                    )
-                                  })}
-                                </ul>
-                                {entry.status === 'in-progress' && allDocsComplete && (
-                                  <p className={styles.checklistNotice}>
-                                    필수 서류를 모두 체크했습니다. 자동으로 완료 탭으로 이동했습니다.
-                                  </p>
-                                )}
-                              </div>
-                            )}
-
-                            <div className={styles.cardActions}>
-                              <Link to={`/services/${entry.serviceId}`} className={styles.linkButton}>
-                                {entry.status === 'completed' ? '상세 내역 보기' : '계속 진행하기'}
-                              </Link>
-                              <button
-                                type="button"
-                                className={styles.outlineButton}
-                                onClick={() => navigate(`/services/${entry.serviceId}/checklist`)}
-                              >
-                                {entry.status === 'completed' ? '서류 다시 확인' : '서류 체크리스트 열기'}
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </article>
-                    )
-                  })}
-                </div>
+      {user ? (
+        <section className={styles.list}>
+          {isLoadingCases ? (
+            <div className={styles.emptyState}>
+              <strong>나의 민원을 불러오는 중입니다…</strong>
+            </div>
+          ) : activeCases.length === 0 ? (
+            <div className={styles.emptyState}>
+              <strong>{emptyMessage}</strong>
+              <span>필요한 서류 안내에서 진행하기를 눌러 민원을 추가할 수 있습니다.</span>
+            </div>
+          ) : (
+            <div className={styles.groupSection}>
+              <div className={styles.groupHeader}>
+                <h2>
+                  진행 중
+                  <span className={styles.groupCount}>{activeCases.length}</span>
+                </h2>
               </div>
-            )
-          })
-        )}
-      </section>
+              <div className={styles.groupList}>{activeCases.map(renderCaseCard)}</div>
+            </div>
+          )}
+        </section>
+      ) : (
+        <section className={styles.list}>
+          <div className={styles.emptyState}>
+            <strong>로그인하면 나의 민원을 저장하고 관리할 수 있습니다.</strong>
+            <span>아직 로그인하지 않으셨습니다. 로그인 후 민원을 추가해 주세요.</span>
+            <div className={styles.emptyActions}>
+              <Link to="/login" className={styles.primaryButton}>
+                로그인 하러 가기
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {showArchive && (
+        <section className={styles.archivePanel}>
+          <div className={styles.archiveHeader}>
+            <h2>이전 민원 보관함</h2>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={() => setShowArchive(false)}
+            >
+              닫기
+            </button>
+          </div>
+          {archivedCases.length === 0 ? (
+            <div className={styles.emptyState}>
+              <strong>{archiveEmptyMessage}</strong>
+            </div>
+          ) : (
+            <div className={styles.groupList}>{archivedCases.map(renderCaseCard)}</div>
+          )}
+        </section>
+      )}
     </div>
   )
 }

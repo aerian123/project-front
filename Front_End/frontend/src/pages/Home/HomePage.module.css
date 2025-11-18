@@ -1,6 +1,7 @@
 .page {
   padding: var(--space-xxl) 0;
   width: 100%;
+  background: linear-gradient(135deg, rgba(226, 232, 240, 0.8), rgba(191, 219, 254, 0.7));
 }
 
 .sidebarArea {
@@ -58,8 +59,8 @@
   display: grid;
   gap: var(--space-xl);
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  background: radial-gradient(circle at top, rgba(59, 130, 246, 0.18), transparent 55%),
-    linear-gradient(135deg, rgba(219, 234, 254, 0.95), rgba(191, 219, 254, 0.85));
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.7), rgba(129, 140, 248, 0.65)),
+    radial-gradient(circle at top, rgba(191, 219, 254, 0.35), transparent 60%);
   padding: calc(var(--space-xl) * 1.2);
   border-radius: calc(var(--radius-xl, 40px));
   box-shadow: 0 30px 60px rgba(15, 23, 42, 0.12);
@@ -87,6 +88,7 @@
   justify-items: start;
   position: relative;
   z-index: 1;
+  color: #f8fbff;
 }
 
 .heroContent > * {
@@ -104,7 +106,7 @@
 
 .heading {
   margin: 0 0 var(--space-md);
-  font-size: clamp(1.5rem, 3vw, 3rem);
+  font-size: clamp(1.5rem, 2vw, 2.4rem);
   line-height: 1.2;
 }
 
@@ -121,7 +123,7 @@
 .description {
   margin: 0 0 var(--space-lg);
   max-width: 920px;
-  color: var(--color-neutral-700);
+  color: rgba(248, 250, 252, 0.92);
   line-height: 1.6;
 }
 
@@ -131,16 +133,17 @@
   justify-content: center;
   gap: var(--space-sm);
   padding: var(--space-sm) var(--space-lg);
-  border-radius: var(--radius-md);
-  background-color: var(--color-primary-sky);
+  border-radius: var(--radius-xl);
+  background-image: linear-gradient(120deg, #f472b6, #fb923c);
   color: #fff;
   font-weight: 600;
-  box-shadow: var(--shadow-subtle);
+  box-shadow: var(--shadow-subtle), 0 20px 40px rgba(251, 146, 60, 0.35);
+  text-decoration: none;
 }
 
 .cta:hover,
 .cta:focus-visible {
-  background-color: var(--color-primary-sky-dark);
+  background-image: linear-gradient(120deg, #f97316, #db2777);
 }
 
 .heroActions {
@@ -152,7 +155,7 @@
 
 .heroHelper {
   font-size: var(--font-size-sm);
-  color: var(--color-primary-sky-dark);
+  color: rgba(255, 255, 255, 0.9);
   font-weight: 600;
 }
 

@@ -6,6 +6,7 @@ import logo from '../img/logo_face.png'
 export const Header = () => {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
+  const isMaster = user?.role === 'master' || user?.name === 'master'
 
   // 인증 플로우가 끝난 사용자는 로그아웃 시 홈으로 안내합니다.
   const handleLogout = () => {
@@ -23,14 +24,18 @@ export const Header = () => {
             <p className={styles.tagline}>두리와 함께해요</p>
           </div>
         </Link>
-        <nav aria-label="주요 메뉴" className={styles.nav}>
-        </nav>
+        <nav aria-label="주요 메뉴" className={styles.nav} />
         <div className={styles.authControls}>
           {user ? (
             <>
               <span className={styles.welcome} aria-live="polite">
                 {user.name}님
               </span>
+              {isMaster && (
+                <Link to="/admin/members" className={styles.adminButton}>
+                  전체 회원 조회
+                </Link>
+              )}
               <button type="button" className={styles.logoutButton} onClick={handleLogout}>
                 로그아웃
               </button>

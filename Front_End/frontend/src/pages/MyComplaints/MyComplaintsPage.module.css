@@ -86,33 +86,33 @@
   color: #1e293b;
 }
 
-.filterRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.filterButton {
-  border-radius: 999px;
-  border: 1px solid #cbd5f5;
-  padding: 8px 18px;
-  background: #fff;
-  color: #1e293b;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease, border 0.2s ease;
-}
-
-.filterButtonActive {
-  background: #1d4ed8;
-  color: #fff;
-  border-color: #1d4ed8;
-  box-shadow: 0 12px 24px rgba(29, 78, 216, 0.25);
-}
-
 .list {
   display: grid;
   gap: 20px;
+}
+
+.archivePanel {
+  border-radius: 24px;
+  border: 1px dashed #cbd5f5;
+  background: #f8fafc;
+  padding: 20px 24px 24px;
+  display: grid;
+  gap: 20px;
+}
+
+.archiveHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.archiveHeader h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .groupSection {
@@ -337,11 +337,13 @@
 
 .checklistItem {
   display: grid;
-  gap: 4px;
-  padding: 10px 12px;
+  gap: 6px;
+  padding: 12px 16px 12px 100px;
   border-radius: 12px;
   border: 1px solid transparent;
   background: #fff;
+  position: relative;
+  min-height: 72px;
 }
 
 .checklistItemDone {
@@ -349,11 +351,56 @@
   background: #f0fdf4;
 }
 
+.checklistTypeTag {
+  position: absolute;
+  left: 24px;
+  top: 14px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #0f172a;
+  background: rgba(226, 232, 240, 0.85);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.typePrep {
+  background: rgba(56, 189, 248, 0.3);
+  color: #0c4a6e;
+}
+
+.typeOnline {
+  background: rgba(191, 219, 254, 0.55);
+  color: #1d4ed8;
+}
+
+.typeReview {
+  background: rgba(248, 191, 132, 0.45);
+  color: #9a3412;
+}
+
+.typeOffline {
+  background: rgba(134, 239, 172, 0.45);
+  color: #047857;
+}
+
+.typeExecute {
+  background: rgba(190, 242, 100, 0.4);
+  color: #365314;
+}
+
+.typeFollow {
+  background: rgba(233, 213, 255, 0.45);
+  color: #6b21a8;
+}
+
 .checklistLabel {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   font-weight: 600;
+  margin-top: 4px;
 }
 
 .checklistLabel input {
@@ -389,6 +436,11 @@
   color: #475569;
   display: grid;
   gap: 12px;
+}
+
+.emptyActions {
+  display: flex;
+  justify-content: center;
 }
 
 @media (max-width: 720px) {

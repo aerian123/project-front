@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { getServiceDetail } from '../../utils/guidanceSearch'
 import {
-  CASES_STORAGE_KEY,
   CASES_UPDATED_EVENT,
   getCaseByServiceId,
   type CaseTrackerStatus,
   upsertCase,
+  upsertCivilCase,
 } from '../../utils/caseTracker'
 import styles from './DocumentChecklistPage.module.css'
 import {
@@ -18,6 +18,8 @@ import {
 import { getJson } from '../../utils/api'
 import type { CivilPetition } from '../../types/civilPetition'
 import type { ServiceGuidanceDetail } from '../../types/guidance'
+import { getSequenceRows, type SequenceRow } from '../../data/serviceSequences'
+import { useAuth } from '../../context/useAuth'
 // 🚀 ================= [여기에 삽입] ================= 🚀
 //
 
@@ -28,7 +30,7 @@ type OfficeCategory = 'all' | 'welfare' | 'civil' | 'employment'
 type OfficeInfo = {
   id: string
   name: string
-  category: OfficeCategory
+  category?: OfficeCategory | null
   regionCode?: string | null
   address: string
   phone?: string
@@ -62,10 +64,90 @@ const formatDistance = (distanceKm: number) => {
   return `${distanceKm.toFixed(1)}km`
 }
 
-const getMarkerColor = (distanceKm: number) => {
-  if (distanceKm <= 0.5) return '#2563eb'
-  if (distanceKm <= 1) return '#facc15'
-  return '#ef4444'
+type LoanStep = {
+  order: number
+  title: string
+  description: string
+}
+
+const FIRST_HOME_LOAN_STEPS: LoanStep[] = [
+  {
+    order: 1,
+    title: '주택도시기금 회원가입',
+    description: '기금e든든(주택기금) 홈페이지에 접속해 회원가입과 본인 인증을 완료합니다.',
+  },
+  {
+    order: 2,
+    title: '예비 자격심사 및 대출 신청',
+    description:
+      '자격심사 페이지에서 세대·소득 정보를 입력해 예비 자격을 확인한 뒤 “가능” 결과가 나오면 온라인으로 대출 신청서를 제출합니다.',
+  },
+  {
+    order: 3,
+    title: '취급은행 상담',
+    description:
+      '신청서를 접수한 은행에서 전화 상담을 진행하며 신청 내용과 필요 서류, 약정 절차를 안내받습니다.',
+  },
+  {
+    order: 4,
+    title: '주택 매매계약서 작성',
+    description:
+      '매매하려는 주택의 계약서를 작성합니다. 공인중개사가 준비해 주는 확약서, 중개대상물 확인서 등 부속 서류를 함께 챙깁니다.',
+  },
+  {
+    order: 5,
+    title: '제출 서류 준비(행정복지센터)',
+    description:
+      '주민등록등본, 무주택 확인서 등 행정복지센터에서 발급받아야 하는 서류를 방문 발급 또는 정부24로 준비합니다.',
+  },
+  {
+    order: 6,
+    title: '소득증빙 발급',
+    description: '회사에서 급여명세서 또는 소득금액증명서를 발급받아 은행 제출용으로 준비합니다.',
+  },
+  {
+    order: 7,
+    title: '은행 방문 및 서류 제출',
+    description:
+      '취급은행을 방문해 모든 원본 서류를 제출하고 담보·보증 절차를 마무리합니다. 심사 중 추가 서류 요청 여부를 확인합니다.',
+  },
+  {
+    order: 8,
+    title: '대출 실행 확인',
+    description: '최종 승인 후 1~2시간 내 지정 계좌로 대출금 입금 여부를 확인하고 잔금 일정을 맞춥니다.',
+  },
+]
+
+type NearbyFilter = {
+  categories?: OfficeCategory[]
+  keywordIncludes?: string[]
+}
+
+const SERVICE_MAP_FILTERS: Record<string, NearbyFilter> = {
+  'first-home-loan': {
+    categories: ['civil', 'welfare'],
+    keywordIncludes: ['은행', '금융', '행정복지', '주택도시기금'],
+  },
+  CP_001: {
+    categories: ['civil', 'welfare'],
+    keywordIncludes: [
+      '은행',
+      '금융',
+      '행정복지',
+      '주택도시기금',
+      '동구청',
+      '북구청',
+      '서구청',
+      '남구청',
+      '광산구청',
+      '구청',
+    ],
+  },
+}
+
+const DEFAULT_NEARBY_FILTER: NearbyFilter = {
+  categories: ['civil', 'welfare', 'employment'],
+  keywordIncludes: ['행정복지', '구청'],
 }
 
 // 🚀 ================= [여기까지 삽입] ================= 🚀
@@ -148,9 +230,9 @@ type StaticChecklistProps = {
 
 const StaticChecklistView = ({ detail, serviceId }: StaticChecklistProps) => {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const docs = detail.documentChecklistDetails
   const mapContainerId = `service-map-${serviceId}`
-  const infoWindowRef = useRef<NaverInfoWindowInstance | null>(null)
   const [caseStatus, setCaseStatus] = useState<CaseTrackerStatus>(() => {
     const entry = getCaseByServiceId(serviceId)
     return entry?.status ?? 'idle'
@@ -171,166 +253,13 @@ const StaticChecklistView = ({ detail, serviceId }: StaticChecklistProps) => {
       setCaseStatus(entry?.status ?? 'idle')
     }
 
-    const handleStorage = (event: StorageEvent) => {
-      if (event.key === CASES_STORAGE_KEY) syncCaseStatus()
-    }
-
-    const handleCasesUpdated = () => syncCaseStatus()
-
     syncCaseStatus()
-
-    window.addEventListener('storage', handleStorage)
-    window.addEventListener(CASES_UPDATED_EVENT, handleCasesUpdated)
+    window.addEventListener(CASES_UPDATED_EVENT, syncCaseStatus as EventListener)
 
     return () => {
-      window.removeEventListener('storage', handleStorage)
-      window.removeEventListener(CASES_UPDATED_EVENT, handleCasesUpdated)
+      window.removeEventListener(CASES_UPDATED_EVENT, syncCaseStatus as EventListener)
     }
   }, [serviceId])
-
-  // ✅ 네이버 지도 + 현재 위치 + 가까운 관공서 표시
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-
-    let markers: NaverMarkerInstance[] = []
-    let canceled = false
-
-    loadNaverMap()
-      .then(() => {
-        if (canceled) return
-        const container = document.getElementById(mapContainerId)
-        if (!container || !window.naver) return
-
-        const naver = window.naver.maps
-        infoWindowRef.current =
-          infoWindowRef.current ??
-          new naver.InfoWindow({
-            borderWidth: 0,
-            backgroundColor: 'transparent',
-          })
-
-        const buildInfoWindowContent = (office: OfficeWithDistance) => {
-          const phoneLine = office.phone ? `<p>전화: ${office.phone}</p>` : ''
-          const openingLine = office.openingHours ? `<p>운영: ${office.openingHours}</p>` : ''
-          const notesLine = office.notes ? `<p>${office.notes}</p>` : ''
-          return `
-            <div class="nearby-info-window">
-              <strong>${office.name}</strong>
-              <p>${office.address}</p>
-              <p>거리: ${formatDistance(office.distanceKm)}</p>
-              ${phoneLine}
-              ${openingLine}
-              ${notesLine}
-            </div>
-          `.trim()
-        }
-
-        // (1) 지도 초기화 함수
-        const initializeMap = (centerLatLng: LatLngInstance, nearbyOffices: OfficeWithDistance[]) => {
-          const initializedMap = new naver.Map(container, {
-            center: centerLatLng,
-            zoom: 14,
-          })
-
-          // 현재 위치 마커
-          new naver.Marker({
-            map: initializedMap,
-            position: centerLatLng,
-            title: '현재 위치',
-            icon: {
-              content: `<div style="width:20px;height:20px;background-color:#007aff;border-radius:50%;border:3px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.5);"></div>`,
-              anchor: new naver.Point(10, 10),
-            },
-          })
-
-          // 단일 InfoWindow 인스턴스를 재사용해 hover/클릭마다 내용을 갈아 끼운다.
-          const openInfoWindow = (office: OfficeWithDistance, marker: NaverMarkerInstance) => {
-            if (!infoWindowRef.current) return
-            infoWindowRef.current.setContent(buildInfoWindowContent(office))
-            infoWindowRef.current.open(initializedMap, marker)
-          }
-          const closeInfoWindow = () => infoWindowRef.current?.close()
-
-          // 가까운 관공서 마커
-          nearbyOffices.forEach((office) => {
-            const pos = new naver.LatLng(office.latitude, office.longitude)
-            const marker = new naver.Marker({
-              map: initializedMap,
-              position: pos,
-              title: office.name,
-              icon: {
-                content: `
-                  <div style="
-                    width:20px;
-                    height:20px;
-                    border-radius:50%;
-                    border:3px solid #fff;
-                    background:${getMarkerColor(office.distanceKm)};
-                    box-shadow:0 4px 10px rgba(15,23,42,0.35);
-                  "></div>
-                `,
-                anchor: new naver.Point(10, 10),
-              },
-            })
-            markers.push(marker)
-
-            naver.Event.addListener(marker, 'mouseover', () => openInfoWindow(office, marker))
-            naver.Event.addListener(marker, 'mouseout', closeInfoWindow)
-            naver.Event.addListener(marker, 'click', () => openInfoWindow(office, marker))
-          })
-        }
-
-        // (2) 서버에서 가까운 관공서 데이터 가져오기
-        const fetchNearbyData = (userLocation: LatLngInstance) => {
-          const lat = userLocation.lat()
-          const lng = userLocation.lng()
-          const radius = 5 // 반경 5km
-
-          getJson<OfficeInfo[]>(
-            `/api/offices/nearby?lat=${lat}&lng=${lng}&radiusKm=${radius}`,
-          )
-            .then((data) => {
-              const withDistance = data
-                .map<OfficeWithDistance>((office) => ({
-                  ...office,
-                  distanceKm: haversineDistanceKm(lat, lng, office.latitude, office.longitude),
-                }))
-                .sort((a, b) => a.distanceKm - b.distanceKm)
-              initializeMap(userLocation, withDistance)
-            })
-            .catch((err) => {
-              console.error('가까운 관공서 로드 실패:', err)
-              initializeMap(userLocation, [])
-            })
-        }
-
-        // (3) 브라우저 위치 요청
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              const userLoc = new naver.LatLng(pos.coords.latitude, pos.coords.longitude) as LatLngInstance
-              fetchNearbyData(userLoc)
-            },
-            (err) => {
-              console.warn('위치정보 접근 거부:', err)
-              const defaultLoc = new naver.LatLng(35.1595454, 126.8526012) as LatLngInstance
-              initializeMap(defaultLoc, [])
-            },
-          )
-        } else {
-          const defaultLoc = new naver.LatLng(35.1595454, 126.8526012) as LatLngInstance
-          initializeMap(defaultLoc, [])
-        }
-      })
-      .catch((error) => console.error('네이버 지도 로드 실패', error))
-
-    return () => {
-      canceled = true
-      markers.forEach((m) => m.setMap(null))
-      markers = []
-      infoWindowRef.current?.close()
-    }
-  }, [mapContainerId])
 
   const docFormats: Record<string, string> = {
     download: '온라인 다운로드',
@@ -345,10 +274,20 @@ const StaticChecklistView = ({ detail, serviceId }: StaticChecklistProps) => {
   }
   const statusLabel = statusLabelMap[caseStatus] ?? '미진행'
 
-  const handleStartCase = () => {
-    upsertCase(detail)
-    setCaseStatus('in-progress')
-    navigate('/my-complaints')
+  const handleStartCase = async () => {
+    if (!user?.memberId) {
+      navigate('/login')
+      return
+    }
+
+    try {
+      await upsertCase(detail, user.memberId)
+      setCaseStatus('in-progress')
+      navigate('/my-complaints')
+    } catch (error) {
+      console.error('나의 민원을 저장하지 못했습니다.', error)
+      alert('나의 민원을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.')
+    }
   }
 
   return (
@@ -363,6 +302,30 @@ const StaticChecklistView = ({ detail, serviceId }: StaticChecklistProps) => {
           총 <strong>{docs.length}</strong>건
         </div>
       </header>
+
+      {serviceId === 'first-home-loan' && (
+        <section className={styles.section}>
+          <h2>진행 단계 요약</h2>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th scope="col">순서</th>
+                <th scope="col">단계</th>
+                <th scope="col">설명</th>
+              </tr>
+            </thead>
+            <tbody>
+              {FIRST_HOME_LOAN_STEPS.map((step) => (
+                <tr key={step.order}>
+                  <td>{step.order}</td>
+                  <td>{step.title}</td>
+                  <td>{step.description}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
 
       {/* 표 기반 체크리스트 */}
       <section className={styles.section}>
@@ -430,26 +393,10 @@ const StaticChecklistView = ({ detail, serviceId }: StaticChecklistProps) => {
         </div>
       </section>
 
-      <section className={styles.section}>
-        <div className={styles.sectionHeading}>
-          <h2>상담 및 방문 안내</h2>
-        </div>
-        <div className={styles.supportGrid}>
-          <div className={styles.mapRow}>
-            <div className={styles.mapPanel}>
-              <h3>가까운 관공서</h3>
-              <div
-                id={mapContainerId}
-                className={styles.mapFrame}
-                aria-label="관공서 위치 지도 영역"
-              >
-                {/* TODO: 지도 API 연동 시 이 컨테이너에 지도를 그려주세요. */}
-                {/* <span>지도 API 연동 준비 중입니다.</span> */}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <NearbyOfficesMap
+        mapContainerId={mapContainerId}
+        filters={SERVICE_MAP_FILTERS[detail.id] ?? DEFAULT_NEARBY_FILTER}
+      />
     </div>
   )
 }
@@ -459,7 +406,38 @@ type CivilChecklistViewProps = {
 }
 
 const CivilChecklistView = ({ petition }: CivilChecklistViewProps) => {
-  const sequence = useMemo(() => {
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const mapContainerId = `civil-map-${petition.infoId}`
+  const [caseStatus, setCaseStatus] = useState<CaseTrackerStatus>(() => {
+    const entry = getCaseByServiceId(petition.infoId)
+    return entry?.status ?? 'idle'
+  })
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'auto' })
+    }
+  }, [])
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const syncCaseStatus = () => {
+      const entry = getCaseByServiceId(petition.infoId)
+      setCaseStatus(entry?.status ?? 'idle')
+    }
+
+    syncCaseStatus()
+    window.addEventListener(CASES_UPDATED_EVENT, syncCaseStatus as EventListener)
+
+    return () => {
+      window.removeEventListener(CASES_UPDATED_EVENT, syncCaseStatus as EventListener)
+    }
+  }, [petition.infoId])
+  const sequence = useMemo<SequenceRow[]>(() => {
+    const serviceSequence = getSequenceRows(petition.infoId)
+    if (serviceSequence.length > 0) {
+      return serviceSequence
+    }
     const onlineRows = petition.onlineSteps.map((content, index) => ({
       id: `online-${index}`,
       order: index + 1,
@@ -473,7 +451,54 @@ const CivilChecklistView = ({ petition }: CivilChecklistViewProps) => {
       content,
     }))
     return [...onlineRows, ...offlineRows]
-  }, [petition.onlineSteps, petition.offlineSteps])
+  }, [petition.infoId, petition.onlineSteps, petition.offlineSteps])
+
+  const handleStartCase = async () => {
+    if (!user?.memberId) {
+      navigate('/login')
+      return
+    }
+
+    try {
+      await upsertCivilCase(petition, user.memberId)
+      setCaseStatus('in-progress')
+      navigate('/my-complaints')
+    } catch (error) {
+      console.error('나의 민원 저장 실패', error)
+      alert('나의 민원 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.')
+    }
+  }
+
+  const statusLabelMap: Record<CaseTrackerStatus, string> = {
+    idle: '미진행',
+    'in-progress': '진행 중',
+    completed: '완료',
+  }
+  const statusLabel = statusLabelMap[caseStatus] ?? '미진행'
+
+  const getSequenceTypeClass = (type: string) => {
+    switch (type) {
+      case '사전 준비':
+      case '신청 준비':
+        return styles.sequenceTypePrep
+      case '온라인 신청':
+        return styles.sequenceTypeOnline
+      case '심사 진행':
+      case '조사 및 심사':
+        return styles.sequenceTypeReview
+      case '은행 방문':
+      case '방문 신청':
+      case '신청 및 접수':
+        return styles.sequenceTypeOffline
+      case '대출 실행':
+      case '선정 및 지급':
+        return styles.sequenceTypeExecute
+      case '사후 관리':
+        return styles.sequenceTypeFollow
+      default:
+        return ''
+    }
+  }
 
   return (
     <div className={styles.page}>
@@ -485,47 +510,344 @@ const CivilChecklistView = ({ petition }: CivilChecklistViewProps) => {
         </div>
       </header>
 
-      {petition.descriptions.length > 0 && (
-        <section className={styles.section}>
-          <h2>상세 안내</h2>
-          <ul className={styles.bulletList}>
-            {petition.descriptions.map((text, index) => (
-              <li key={`${petition.infoId}-desc-${index}`}>{text}</li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <section className={styles.section}>
+  <section className={styles.section}>
         <h2>처리 순서</h2>
         <table className={styles.table}>
           <thead>
             <tr>
-              <th scope="col">순서</th>
-              <th scope="col">구분</th>
+              <th scope="col">진행</th>
               <th scope="col">안내</th>
             </tr>
           </thead>
           <tbody>
             {sequence.length === 0 && (
               <tr>
-                <td colSpan={3}>표시할 단계가 없습니다.</td>
+                <td colSpan={2}>표시할 단계가 없습니다.</td>
               </tr>
             )}
-            {sequence.map((row) => (
-              <tr key={row.id}>
-                <td>{row.order}</td>
-                <td>
-                  <span className={styles.sequenceChip}>{row.type}</span>
-                </td>
-                <td>{row.content}</td>
-              </tr>
-            ))}
+            {sequence.map((row) => {
+              const typeBadgeClass = getSequenceTypeClass(row.type)
+              const typeClassNames = [styles.sequenceType, typeBadgeClass]
+                .filter(Boolean)
+                .join(' ')
+              return (
+                <tr key={row.id} className={styles.sequenceRow}>
+                  <td className={styles.sequenceTypeCell}>
+                    <span className={styles.sequenceStepBadge}>{row.order}</span>
+                    <div className={styles.sequenceTypeWrapper}>
+                      <span className={typeClassNames}>{row.type}</span>
+                      <span className={styles.sequenceStepLabel}>STEP {row.order}</span>
+                    </div>
+                  </td>
+                  <td className={styles.sequenceContentCell}>
+                    {row.title && <p className={styles.sequenceContentTitle}>{row.title}</p>}
+                    <p className={styles.sequenceGuide}>{row.content}</p>
+                    {row.checklist && row.checklist.length > 0 && (
+                      <ul className={styles.sequenceList}>
+                        {row.checklist.map((item, index) => (
+                          <li key={`${row.id}-list-${index}`}>{item}</li>
+                        ))}
+                      </ul>
+                    )}
+                    {row.note && <p className={styles.sequenceFootnote}>{row.note}</p>}
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </section>
+
+      <section className={styles.section}>
+        <div className={styles.actionCard}>
+          <div>
+            <h2>나의 민원에서 진행 이어가기</h2>
+            <p className={styles.actionDescription}>
+              준비가 끝났다면 나의 민원 페이지에서 진행 상황을 정리해 보세요.
+            </p>
+            <span className={styles.statusBadge}>현재 상태: {statusLabel}</span>
+          </div>
+          <button type="button" className={styles.actionButton} onClick={handleStartCase}>
+            나의 민원으로 이동
+          </button>
+        </div>
+      </section>
+
+      <NearbyOfficesMap
+        mapContainerId={mapContainerId}
+        showHeading={false}
+        filters={SERVICE_MAP_FILTERS[petition.infoId] ?? DEFAULT_NEARBY_FILTER}
+      />
     </div>
   )
+}
+
+type NearbyOfficesMapProps = {
+  mapContainerId: string
+  showHeading?: boolean
+  filters?: NearbyFilter
+}
+
+function NearbyOfficesMap({
+  mapContainerId,
+  showHeading = true,
+  filters,
+}: NearbyOfficesMapProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const infoWindowRef = useRef<NaverInfoWindowInstance | null>(null)
+  const [officeList, setOfficeList] = useState<OfficeWithDistance[]>([])
+  const [geoError, setGeoError] = useState<string | null>(null)
+  const [isRequestingLocation, setIsRequestingLocation] = useState(false)
+  const [refreshCounter, setRefreshCounter] = useState(0)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    let markers: NaverMarkerInstance[] = []
+    let canceled = false
+    setGeoError(null)
+    setIsRequestingLocation(true)
+
+    loadNaverMap()
+      .then(() => {
+        if (canceled) return
+        const container = containerRef.current
+        if (!container || !window.naver) return
+
+        const naver = window.naver.maps
+        infoWindowRef.current =
+          infoWindowRef.current ??
+          new naver.InfoWindow({
+            borderWidth: 0,
+            backgroundColor: 'transparent',
+          })
+
+        const buildInfoWindowContent = (office: OfficeWithDistance, order: number) => {
+          const phoneLine = office.phone ? `<p>전화: ${office.phone}</p>` : ''
+          const openingLine = office.openingHours ? `<p>운영: ${office.openingHours}</p>` : ''
+          const notesLine = office.notes ? `<p>${office.notes}</p>` : ''
+          return `
+            <div class="nearby-info-window">
+              <strong>${office.name}</strong>
+              <p>${office.address}</p>
+              <p>순서: STEP ${order}</p>
+              <p>거리: ${formatDistance(office.distanceKm)}</p>
+              ${phoneLine}
+              ${openingLine}
+              ${notesLine}
+            </div>
+          `.trim()
+        }
+
+        const initializeMap = (centerLatLng: LatLngInstance, nearbyOffices: OfficeWithDistance[]) => {
+          const initializedMap = new naver.Map(container, {
+            center: centerLatLng,
+            zoom: 14,
+          })
+
+          new naver.Marker({
+            map: initializedMap,
+            position: centerLatLng,
+            title: '현재 위치',
+            icon: {
+              content: `<div style="width:20px;height:20px;background-color:#007aff;border-radius:50%;border:3px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.5);"></div>`,
+              anchor: new naver.Point(10, 10),
+            },
+          })
+
+          const openInfoWindow = (
+            office: OfficeWithDistance,
+            marker: NaverMarkerInstance,
+            order: number,
+          ) => {
+            if (!infoWindowRef.current) return
+            infoWindowRef.current.setContent(buildInfoWindowContent(office, order))
+            infoWindowRef.current.open(initializedMap, marker)
+          }
+          const closeInfoWindow = () => infoWindowRef.current?.close()
+
+          nearbyOffices.forEach((office, index) => {
+            const order = index + 1
+            const pos = new naver.LatLng(office.latitude, office.longitude)
+            const marker = new naver.Marker({
+              map: initializedMap,
+              position: pos,
+              title: office.name,
+              icon: {
+                content: `
+                  <div style="
+                    width:34px;
+                    height:34px;
+                    border-radius:50%;
+                    border:2px solid #fff;
+                    background:#1d4ed8;
+                    color:#fff;
+                    font-weight:700;
+                    font-size:0.9rem;
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                    box-shadow:0 6px 16px rgba(15,23,42,0.35);
+                  ">
+                    ${order}
+                  </div>
+                `,
+                anchor: new naver.Point(10, 10),
+              },
+            })
+            markers.push(marker)
+
+            naver.Event.addListener(marker, 'mouseover', () => openInfoWindow(office, marker, order))
+            naver.Event.addListener(marker, 'mouseout', closeInfoWindow)
+            naver.Event.addListener(marker, 'click', () => openInfoWindow(office, marker, order))
+          })
+        }
+
+        const fetchNearbyData = (userLocation: LatLngInstance) => {
+          const lat = userLocation.lat()
+          const lng = userLocation.lng()
+          const radius = 5
+
+          getJson<OfficeInfo[]>(
+            `/api/offices/nearby?lat=${lat}&lng=${lng}&radiusKm=${radius}`,
+          )
+            .then((data) => {
+              const withDistance = data
+                .map<OfficeWithDistance>((office) => ({
+                  ...office,
+                  distanceKm: haversineDistanceKm(lat, lng, office.latitude, office.longitude),
+                }))
+                .sort((a, b) => a.distanceKm - b.distanceKm)
+              const withinRadius = withDistance.filter((office) => office.distanceKm <= radius)
+              const filtered = applyNearbyFilters(withinRadius, filters)
+              const finalList = (filtered.length > 0 ? filtered : withinRadius).slice(0, 5)
+              setOfficeList(finalList)
+              initializeMap(userLocation, finalList)
+            })
+            .catch((err) => {
+              console.error('가까운 관공서 로드 실패:', err)
+              setOfficeList([])
+              initializeMap(userLocation, [])
+            })
+        }
+
+        const handleGeoSuccess = (pos: GeolocationPosition) => {
+          setIsRequestingLocation(false)
+          const userLoc = new naver.LatLng(pos.coords.latitude, pos.coords.longitude) as LatLngInstance
+          fetchNearbyData(userLoc)
+        }
+
+        const handleGeoError = (err: GeolocationPositionError) => {
+          console.warn('위치정보 접근 거부:', err)
+          setIsRequestingLocation(false)
+          setGeoError(
+            '현재 위치 정보를 가져오지 못했습니다. 브라우저 권한을 허용하거나 HTTPS(https://localhost)로 접속해 주세요.',
+          )
+          const defaultLoc = new naver.LatLng(35.1595454, 126.8526012) as LatLngInstance
+          setOfficeList([])
+          initializeMap(defaultLoc, [])
+        }
+
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(handleGeoSuccess, handleGeoError, {
+            enableHighAccuracy: true,
+            timeout: 8000,
+            maximumAge: 0,
+          })
+        } else {
+          setIsRequestingLocation(false)
+          setGeoError('이 브라우저에서는 위치 정보를 사용할 수 없습니다.')
+          const defaultLoc = new naver.LatLng(35.1595454, 126.8526012) as LatLngInstance
+          setOfficeList([])
+          initializeMap(defaultLoc, [])
+        }
+      })
+      .catch((error) => console.error('네이버 지도 로드 실패', error))
+
+    return () => {
+      canceled = true
+      markers.forEach((marker) => marker.setMap(null))
+      markers = []
+      infoWindowRef.current?.close()
+      if (containerRef.current) {
+        containerRef.current.innerHTML = ''
+      }
+    }
+  }, [filters, mapContainerId, refreshCounter])
+
+  return (
+    <section className={styles.section}>
+      {showHeading && (
+        <div className={styles.sectionHeading}>
+          <h2>상담 및 방문 안내</h2>
+        </div>
+      )}
+      <div className={styles.supportGrid}>
+        <div className={styles.mapRow}>
+          <div className={styles.mapPanel}>
+            <h3>가까운 관공서</h3>
+            <div className={styles.mapActions}>
+              {geoError && <p className={styles.mapError}>{geoError}</p>}
+              <button
+                type="button"
+                className={styles.mapRefreshButton}
+                onClick={() => setRefreshCounter((count) => count + 1)}
+                disabled={isRequestingLocation}
+              >
+                {isRequestingLocation ? '위치 확인 중…' : '위치 다시 찾기'}
+              </button>
+            </div>
+            <div
+              id={mapContainerId}
+              ref={containerRef}
+              className={styles.mapFrame}
+              aria-label="관공서 위치 지도 영역"
+            />
+          </div>
+          <div className={styles.nearbyListPanel}>
+            <h3>STEP 순서 목록</h3>
+            {officeList.length === 0 ? (
+              <p className={styles.mapHelper}>표시할 지점을 불러올 수 없습니다.</p>
+            ) : (
+              <ol className={styles.nearbyList}>
+                {officeList.map((office, index) => (
+                  <li key={`${office.id}-${index}`} className={styles.nearbyListItem}>
+                    <span className={styles.nearbyListStep}>{index + 1}</span>
+                    <div className={styles.nearbyListBody}>
+                      <p className={styles.nearbyListName}>{office.name}</p>
+                      <p className={styles.nearbyListMeta}>{office.address}</p>
+                      <p className={styles.nearbyListMeta}>거리 {formatDistance(office.distanceKm)}</p>
+                      {office.phone && (
+                        <p className={styles.nearbyListMeta}>전화 {office.phone}</p>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+const applyNearbyFilters = (offices: OfficeWithDistance[], filters?: NearbyFilter) => {
+  if (!filters) return offices
+  let filtered = offices
+  if (filters.categories?.length) {
+    filtered = filtered.filter((office) => {
+      if (!office.category) return true
+      return filters.categories!.includes(office.category)
+    })
+  }
+  if (filters.keywordIncludes?.length) {
+    filtered = filtered.filter((office) => {
+      const target = `${office.name ?? ''} ${office.address ?? ''}`
+      return filters.keywordIncludes!.some((keyword) => target.includes(keyword))
+    })
+  }
+  return filtered
 }
 
 export default DocumentChecklistPage

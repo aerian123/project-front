@@ -106,11 +106,12 @@ export const SignupPage = () => {
 
     setSubmitting(true)
     try {
-      const response = await postJson<{ memberId: string; name: string; phone: string }>(
+      const response = await postJson<{ memberId: string; name: string; phone: string; role?: 'master' | 'member' }>(
         '/api/auth/register',
         { name: name.trim(), phone: normalizedPhone },
       )
-      register({ name: response.name, phone: response.phone })
+      const role = response.role ?? (response.name === 'master' ? 'master' : 'member')
+      register({ name: response.name, phone: response.phone, role })
       setAlert({
         type: 'success',
         text: '회원가입이 완료되었습니다. 안내 화면으로 이동합니다.',
@@ -169,14 +170,17 @@ export const SignupPage = () => {
               type="tel"
               value={phone}
               onChange={(event) => {
-                setPhone(event.target.value)
+                const digitsOnly = event.target.value.replace(/\D/g, '')
+                setPhone(digitsOnly)
                 resetVerificationState()
               }}
               placeholder="예) 01012345678"
               autoComplete="tel-national"
+              pattern="[0-9]*"
+              inputMode="numeric"
             />
-            <p className={styles.helper}>
-              숫자만 입력해주세요. 실제 서비스에서는 휴대전화로 문자가 발송됩니다.
+            <p className={`${styles.helper} ${styles.helperNotice}`}>
+              하이픈(-) 없이 숫자만 입력해 주세요. 예) <strong>01012345678</strong>
             </p>
           </label>
 

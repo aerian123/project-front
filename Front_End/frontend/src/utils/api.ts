@@ -3,8 +3,31 @@
  * BASE_URL은 Vite 환경 변수(VITE_API_BASE_URL)로 주입받고,
  * 값이 없으면 개발 환경 기본값(127.0.0.1:8081; Spring Boot 서버)을 사용합니다.
  */
-const baseFromEnv = import.meta.env.VITE_API_BASE_URL?.trim().replace(/\/+$/, '')
-const BASE_URL = baseFromEnv || 'http://127.0.0.1:8081'
+import { MOCK_OFFICES, type OfficeRecord } from '../data/offices'
+
+const normalizeBase = (value?: string) => {
+  if (!value) return ''
+  const trimmed = value.trim()
+  if (!trimmed) return ''
+  return trimmed.replace(/\/+$/, '')
+}
+
+const DEFAULT_BASE_URL = 'http://127.0.0.1:8081'
+const BASE_URL =
+  normalizeBase(import.meta.env.VITE_API_BASE_URL) ||
+  normalizeBase(import.meta.env.VITE_BACKEND_ORIGIN) ||
+  DEFAULT_BASE_URL
+
+const ENABLE_OFFLINE_MOCK =
+  (import.meta.env.VITE_ENABLE_OFFLINE_MOCK ?? '').toString().toLowerCase() === 'true'
+
+const resolvePath = (path: string) => {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  if (!BASE_URL) {
+    return normalizedPath
+  }
+  return `${BASE_URL}${normalizedPath}`
+}
 
 type JsonValue = Record<string, unknown> | JsonValue[] | string | number | boolean | null;
 
@@ -17,11 +40,12 @@ export async function postJson<TResponse>(
   path: string,
   body: Record<string, unknown>,
 ): Promise<TResponse> {
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`
-  const response = await fetch(`${BASE_URL}${normalizedPath}`, {
+  const requestUrl = resolvePath(path)
+  const response = await fetch(requestUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+    credentials: 'include',
   });
 
   if (response.ok) {
@@ -60,11 +84,71 @@ export async function getJson<TResponse>(
         )
         .join('&')
     : ''
-  const url = query ? `${BASE_URL}${normalizedPath}?${query}` : `${BASE_URL}${normalizedPath}`
+  const baseUrl = resolvePath(normalizedPath)
+  const url = query ? `${baseUrl}?${query}` : baseUrl
 
-  const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error(response.statusText || '요청에 실패했습니다.')
+  try {
+    const response = await fetch(url, { credentials: 'include' })
+    if (!response.ok) {
+      throw new Error(response.statusText || '요청에 실패했습니다.')
+    }
+    return (await response.json()) as TResponse
+  } catch (error) {
+    if (ENABLE_OFFLINE_MOCK) {
+      const offline = getOfflineResponse(normalizedPath, params)
+      if (offline !== null) {
+        return offline as TResponse
+      }
+    }
+    throw error
   }
-  return (await response.json()) as TResponse
+}
+
+const haversineDistanceKm = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+  const toRad = (deg: number) => (deg * Math.PI) / 180
+  const R = 6371
+  const dLat = toRad(lat2 - lat1)
+  const dLng = toRad(lng2 - lng1)
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
+
+const getOfflineResponse = (
+  pathWithQuery: string,
+  params?: Record<string, string | number | boolean | undefined>,
+): unknown | null => {
+  const [pathname, existingQuery = ''] = pathWithQuery.split('?')
+  const searchParams = new URLSearchParams(existingQuery)
+  if (params) {
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === undefined || value === null) return
+      searchParams.set(key, String(value))
+    })
+  }
+
+  if (pathname === '/api/offices') {
+    const regionId = searchParams.get('regionId')
+    if (!regionId) {
+      return [...MOCK_OFFICES]
+    }
+    return MOCK_OFFICES.filter((office) => office.regionCode === regionId)
+  }
+
+  if (pathname === '/api/offices/nearby') {
+    const lat = Number(searchParams.get('lat'))
+    const lng = Number(searchParams.get('lng'))
+    const radiusKm = Number(searchParams.get('radiusKm')) || 5
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return [...MOCK_OFFICES]
+    }
+    return MOCK_OFFICES.filter((office: OfficeRecord) => {
+      const distance = haversineDistanceKm(lat, lng, office.latitude, office.longitude)
+      return distance <= radiusKm
+    })
+  }
+
+  return null
 }

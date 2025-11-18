@@ -101,6 +101,11 @@
   line-height: 1.4;
 }
 
+.helperNotice {
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
 .message {
   border-radius: 12px;
   padding: 12px 16px;

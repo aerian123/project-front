@@ -106,13 +106,9 @@ export const HomePage = () => {
               텍스트나 강조 색상을 바꾸려면 HomePage.module.css와 함께 조정하세요. */}
           <section className={styles.hero}>
             <div className={styles.heroContent}>
-              <p className={styles.sectionLabel}>공공복지 안내</p>
               <h1 className={styles.heading}>
                 민원 서류 준비 도와 줄게요
               </h1>
-              <p className={styles.description}>
-                까다로운 민원 준비도 한번에!
-              </p>
               <div className={styles.heroActions}>
                 <a className={styles.cta} href="\#chatbot">
                   검색창에 민원 검색해보기

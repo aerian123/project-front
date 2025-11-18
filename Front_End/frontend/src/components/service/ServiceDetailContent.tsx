@@ -5,7 +5,6 @@ import type {
   ServiceGuidanceDetail,
 } from '../../types/guidance'
 import {
-  CASES_STORAGE_KEY,
   CASES_UPDATED_EVENT,
   getCaseByServiceId,
   type CaseTrackerStatus,
@@ -13,6 +12,7 @@ import {
 } from '../../utils/caseTracker'
 import { ServiceSummaryCard } from './ServiceSummaryCard'
 import styles from './ServiceDetailContent.module.css'
+import { useAuth } from '../../context/useAuth'
 
 type ServiceDetailContentProps = {
   detail: ServiceGuidanceDetail
@@ -32,6 +32,7 @@ export const ServiceDetailContent = ({
   onSelectRelated,
 }: ServiceDetailContentProps) => {
   const TitleTag: keyof JSX.IntrinsicElements = variant === 'inline' ? 'h2' : 'h1'
+  const { user } = useAuth()
   const storageKey = `document-checklist:${detail.id}`
   const [completedDocs, setCompletedDocs] = useState<Set<string>>(() => {
     if (typeof window === 'undefined') return new Set()
@@ -84,16 +85,10 @@ export const ServiceDetailContent = ({
       setCaseStatus(entry?.status ?? 'idle')
     }
 
-    const handleStorage = (event: StorageEvent) => {
-      if (event.key === CASES_STORAGE_KEY) syncStatus()
-    }
-
     window.addEventListener(CASES_UPDATED_EVENT, syncStatus as EventListener)
-    window.addEventListener('storage', handleStorage)
 
     return () => {
       window.removeEventListener(CASES_UPDATED_EVENT, syncStatus as EventListener)
-      window.removeEventListener('storage', handleStorage)
     }
   }, [detail.id])
 
@@ -109,10 +104,18 @@ export const ServiceDetailContent = ({
     })
   }
 
-  const handleStartCase = () => {
-    // TODO: 백엔드에 "나의 민원" 진행중 케이스를 생성하는 API를 연결하세요.
-    upsertCase(detail)
-    setCaseStatus('in-progress')
+  const handleStartCase = async () => {
+    if (!user?.memberId) {
+      alert('로그인 후 이용해 주세요.')
+      return
+    }
+
+    try {
+      await upsertCase(detail, user.memberId)
+      setCaseStatus('in-progress')
+    } catch (error) {
+      console.error('나의 민원을 생성하지 못했습니다.', error)
+    }
   }
 
   const documentNameMap = new Map(
